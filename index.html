@@ -1,85 +1,168 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>책 이미지 생성기</title>
+  <title>책 이미지 위젯 생성기</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f9f9f9;
+      padding: 30px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    #dropZone {
+      border: 2px dashed #ccc;
+      border-radius: 12px;
+      padding: 40px;
+      background: white;
+      width: 400px;
+      margin: 0 auto 20px;
+      transition: border-color 0.3s;
+    }
+
+    #dropZone.dragover {
+      border-color: #4a90e2;
+    }
+
+    canvas {
+      display: none;
+    }
+
+    #preview {
+      margin-top: 20px;
+      max-width: 100%;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+    }
+
+    .buttons {
+      margin-top: 15px;
+    }
+
+    button {
+      margin: 5px;
+      padding: 10px 20px;
+      font-size: 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button.bg {
+      background-color: #eee;
+    }
+
+    button.download {
+      background-color: #4a90e2;
+      color: white;
+    }
+  </style>
 </head>
-<body style="font-family: sans-serif">
-  <input type="text" id="imageUrl" placeholder="책 이미지 URL 입력" style="width: 400px;">
-  <br><br>
+<body>
 
-  <button onclick="setBackground('white')">흰 배경</button>
-  <button onclick="setBackground('black')">검정 배경</button>
-  <button onclick="setBackground('transparent')">투명 배경</button>
-  <button onclick="generateImage()">이미지 만들기</button>
+<h1>책 이미지 위젯 생성기</h1>
 
-  <br><br>
-  <canvas id="canvas" style="display: none;"></canvas>
-  <img id="preview" style="margin-top: 20px; max-width: 100%;">
+<div id="dropZone">여기에 이미지를 드래그하거나 클릭하여 업로드하세요</div>
+<input type="file" id="fileInput" style="display: none;" accept="image/*">
 
-  <script>
-    let selectedBackground = 'white'; // 기본 배경
+<div class="buttons">
+  <button class="bg" onclick="setBackground('white')">흰 배경</button>
+  <button class="bg" onclick="setBackground('black')">검정 배경</button>
+  <button class="bg" onclick="setBackground('transparent')">투명 배경</button>
+  <button class="download" onclick="downloadImage()">이미지 다운로드</button>
+</div>
 
-    function setBackground(color) {
-      selectedBackground = color;
+<canvas id="canvas"></canvas>
+<img id="preview">
+
+<script>
+  let selectedBackground = 'white';
+  let uploadedImage = null;
+
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', () => {
+    handleFile(fileInput.files[0]);
+  });
+
+  function handleFile(file) {
+    if (!file.type.startsWith('image/')) {
+      alert("이미지 파일만 업로드할 수 있습니다.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      uploadedImage = new Image();
+      uploadedImage.onload = () => drawImage();
+      uploadedImage.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function setBackground(color) {
+    selectedBackground = color;
+    if (uploadedImage) drawImage();
+  }
+
+  function drawImage() {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const canvasWidth = 1400;
+    const canvasHeight = 500;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+
+    if (selectedBackground !== 'transparent') {
+      ctx.fillStyle = selectedBackground;
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    } else {
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
     }
 
-    function generateImage() {
-      const url = document.getElementById('imageUrl').value;
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
+    const scale = Math.min(canvasWidth * 0.3 / uploadedImage.width, canvasHeight * 0.8 / uploadedImage.height);
+    const imgWidth = uploadedImage.width * scale;
+    const imgHeight = uploadedImage.height * scale;
+    const x = (canvasWidth - imgWidth) / 2;
+    const y = (canvasHeight - imgHeight) / 2;
 
-      img.onload = function () {
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 10;
+    ctx.drawImage(uploadedImage, x, y, imgWidth, imgHeight);
+    ctx.restore();
 
-        // 캔버스 크기
-        const canvasWidth = 1400;
-        const canvasHeight = 500;
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
+    const preview = document.getElementById('preview');
+    preview.src = canvas.toDataURL('image/png');
+  }
 
-        // 배경색 설정
-        if (selectedBackground !== 'transparent') {
-          ctx.fillStyle = selectedBackground;
-          ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-        } else {
-          ctx.clearRect(0, 0, canvasWidth, canvasHeight); // 투명 배경
-        }
+  function downloadImage() {
+    const canvas = document.getElementById('canvas');
+    const link = document.createElement('a');
+    link.download = 'book-widget.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+</script>
 
-        // 이미지 비율 및 위치 계산
-        const scale = Math.min(canvasWidth * 0.3 / img.width, canvasHeight * 0.8 / img.height);
-        const imgWidth = img.width * scale;
-        const imgHeight = img.height * scale;
-        const x = (canvasWidth - imgWidth) / 2;
-        const y = (canvasHeight - imgHeight) / 2;
-
-        // 그림자와 이미지 그리기
-        ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0.3)';
-        ctx.shadowBlur = 40;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 10;
-        ctx.drawImage(img, x, y, imgWidth, imgHeight);
-        ctx.restore();
-
-        // 미리보기 & 다운로드 링크
-        const preview = document.getElementById('preview');
-        preview.src = canvas.toDataURL('image/png');
-        canvas.style.display = 'none';
-
-        const link = document.createElement('a');
-        link.download = 'book-widget.png';
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-      };
-
-      img.onerror = function () {
-        alert("이미지를 불러올 수 없습니다. 올바른 URL인지 확인해주세요.");
-      };
-
-      img.src = url;
-    }
-  </script>
 </body>
 </html>
