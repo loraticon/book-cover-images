@@ -162,9 +162,10 @@
   }
 
   function drawImage() {
-    const canvasSize = 700;
-    canvas.width = canvasSize;
-    canvas.height = canvasSize;
+    const canvasWidth = 1500;
+    const canvasHeight = 400;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
 
     if (selectedBackground !== 'transparent') {
       ctx.fillStyle = selectedBackground;
