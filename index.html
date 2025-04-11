@@ -10,7 +10,13 @@ export default function Home() {
   const handleCapture = () => {
     if (!captureRef.current) return;
 
-    html2canvas(captureRef.current, { backgroundColor: null, width: 1400, height: 500 }).then((canvas) => {
+    html2canvas(captureRef.current, {
+      backgroundColor: background === "transparent" ? null : background,
+      width: 1400,
+      height: 500,
+      useCORS: true,
+      scale: 1
+    }).then((canvas) => {
       const link = document.createElement("a");
       link.download = "capture.png";
       link.href = canvas.toDataURL();
@@ -27,58 +33,39 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-100 p-4">
-      <div className="mb-4">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 space-y-6">
+      <div className="w-full max-w-xl">
         <input
           type="text"
+          placeholder="이미지 주소를 입력하세요"
           value={imageUrl}
           onChange={handleImageChange}
-          placeholder="이미지 주소를 입력하세요"
-          className="p-2 border rounded w-full mb-2"
+          className="w-full px-4 py-2 border rounded"
         />
-        <div className="flex gap-2">
-          {[
-            { name: "white", label: "흰 배경" },
-            { name: "black", label: "검정 배경" },
-            { name: "transparent", label: "투명 배경" },
-          ].map(({ name, label }) => (
-            <button
-              key={name}
-              onClick={() => handleBackgroundChange(name)}
-              className={`px-4 py-2 rounded transition-all ${
-                background === name ? "bg-[#191919] text-white" : "bg-gray-200 text-black"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
       </div>
 
-      <div className="mb-4">
-        <button
-          onClick={handleCapture}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          이미지 다운로드
-        </button>
+      <div className="flex space-x-2">
+        {[{ name: "white", label: "흰 배경" }, { name: "black", label: "검정 배경" }, { name: "transparent", label: "투명 배경" }].map(({ name, label }) => (
+          <button
+            key={name}
+            onClick={() => handleBackgroundChange(name)}
+            className={`px-4 py-2 rounded transition-all ${background === name ? "bg-[#191919] text-white" : "bg-gray-200 text-black"}`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       <div
         ref={captureRef}
+        className="relative"
         style={{
-          backgroundColor:
-            background === "transparent"
-              ? "rgba(0,0,0,0)"
-              : background === "black"
-              ? "#000"
-              : "#fff",
           width: "1400px",
           height: "500px",
+          backgroundColor: background === "transparent" ? "transparent" : background,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          position: "relative",
         }}
       >
         {imageUrl ? (
@@ -86,19 +73,20 @@ export default function Home() {
             ref={imageRef}
             src={imageUrl}
             alt="미리보기 이미지"
-            style={{
-              maxWidth: "100%",
-              maxHeight: "100%",
-              objectFit: "contain",
-            }}
+            className="max-h-full max-w-full object-contain"
             onError={() => alert("이미지를 불러올 수 없습니다. 이미지 주소를 확인해주세요.")}
           />
         ) : (
-          <span style={{ color: background === "black" ? "#fff" : "#000" }}>
-            이미지 주소를 입력하세요
-          </span>
+          <span className="text-gray-500">이미지 주소를 입력하세요</span>
         )}
       </div>
+
+      <button
+        onClick={handleCapture}
+        className="mt-4 px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+      >
+        이미지 다운로드
+      </button>
     </div>
   );
 }
