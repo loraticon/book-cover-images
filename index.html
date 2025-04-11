@@ -1,64 +1,75 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8" />
-  <title>책 그림자 생성기</title>
+  <meta charset="UTF-8">
+  <title>책 이미지 생성기</title>
 </head>
-<body>
+<body style="font-family: sans-serif">
   <input type="text" id="imageUrl" placeholder="책 이미지 URL 입력" style="width: 400px;">
+  <br><br>
+
+  <button onclick="setBackground('white')">흰 배경</button>
+  <button onclick="setBackground('black')">검정 배경</button>
+  <button onclick="setBackground('transparent')">투명 배경</button>
   <button onclick="generateImage()">이미지 만들기</button>
+
   <br><br>
   <canvas id="canvas" style="display: none;"></canvas>
   <img id="preview" style="margin-top: 20px; max-width: 100%;">
 
   <script>
+    let selectedBackground = 'white'; // 기본 배경
+
+    function setBackground(color) {
+      selectedBackground = color;
+    }
+
     function generateImage() {
       const url = document.getElementById('imageUrl').value;
       const img = new Image();
       img.crossOrigin = 'anonymous';
+
       img.onload = function () {
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
-        // 캔버스 크기 지정
+        // 캔버스 크기
         const canvasWidth = 1400;
         const canvasHeight = 500;
         canvas.width = canvasWidth;
         canvas.height = canvasHeight;
 
-        // 배경 흰색
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        // 배경색 설정
+        if (selectedBackground !== 'transparent') {
+          ctx.fillStyle = selectedBackground;
+          ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        } else {
+          ctx.clearRect(0, 0, canvasWidth, canvasHeight); // 투명 배경
+        }
 
-        // 이미지 비율 계산
+        // 이미지 비율 및 위치 계산
         const scale = Math.min(canvasWidth * 0.3 / img.width, canvasHeight * 0.8 / img.height);
         const imgWidth = img.width * scale;
         const imgHeight = img.height * scale;
-
-        // 이미지 중앙 위치 계산
         const x = (canvasWidth - imgWidth) / 2;
         const y = (canvasHeight - imgHeight) / 2;
 
-        // 그림자 박스 그리기 (약간 큰 직사각형, blur 효과)
-        const shadowOffset = 20;
-        const shadowBlur = 40;
-
+        // 그림자와 이미지 그리기
         ctx.save();
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
-        ctx.shadowBlur = shadowBlur;
+        ctx.shadowColor = 'rgba(0,0,0,0.3)';
+        ctx.shadowBlur = 40;
         ctx.shadowOffsetX = 0;
         ctx.shadowOffsetY = 10;
         ctx.drawImage(img, x, y, imgWidth, imgHeight);
         ctx.restore();
 
-        // 결과 미리보기
+        // 미리보기 & 다운로드 링크
         const preview = document.getElementById('preview');
         preview.src = canvas.toDataURL('image/png');
-        canvas.style.display = 'none'; // 미리보기는 img 태그로
+        canvas.style.display = 'none';
 
-        // 다운로드
         const link = document.createElement('a');
-        link.download = 'book-image.png';
+        link.download = 'book-widget.png';
         link.href = canvas.toDataURL('image/png');
         link.click();
       };
