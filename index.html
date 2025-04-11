@@ -1,92 +1,193 @@
-import html2canvas from "html2canvas";
-import { useEffect, useRef, useState } from "react";
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>책 이미지 위젯 생성기</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f9f9f9;
+      padding: 30px;
+      text-align: center;
+    }
 
-export default function Home() {
-  const [imageUrl, setImageUrl] = useState("");
-  const [background, setBackground] = useState("white");
-  const imageRef = useRef(null);
-  const captureRef = useRef(null);
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
 
-  const handleCapture = () => {
-    if (!captureRef.current) return;
+    #dropZone {
+      border: 2px dashed #ccc;
+      border-radius: 12px;
+      padding: 40px;
+      background: white;
+      width: 400px;
+      margin: 0 auto 20px;
+      transition: border-color 0.3s;
+      cursor: pointer;
+    }
 
-    html2canvas(captureRef.current, {
-      backgroundColor: background === "transparent" ? null : background,
-      width: 1400,
-      height: 500,
-      useCORS: true,
-      scale: 1
-    }).then((canvas) => {
-      const link = document.createElement("a");
-      link.download = "capture.png";
-      link.href = canvas.toDataURL();
-      link.click();
-    });
-  };
+    #dropZone.dragover {
+      border-color: #4a90e2;
+    }
 
-  const handleImageChange = (e) => {
-    setImageUrl(e.target.value);
-  };
+    #imageURLInput {
+      width: 400px;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-bottom: 15px;
+    }
 
-  const handleBackgroundChange = (bg) => {
-    setBackground(bg);
-  };
+    canvas {
+      display: none;
+    }
 
-  return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-4 space-y-6">
-      <div className="w-full max-w-xl">
-        <input
-          type="text"
-          placeholder="이미지 주소를 입력하세요"
-          value={imageUrl}
-          onChange={handleImageChange}
-          className="w-full px-4 py-2 border rounded"
-        />
-      </div>
+    #preview {
+      margin-top: 20px;
+      max-width: 100%;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+    }
 
-      <div className="flex space-x-2">
-        {[{ name: "white", label: "흰 배경" }, { name: "black", label: "검정 배경" }, { name: "transparent", label: "투명 배경" }].map(({ name, label }) => (
-          <button
-            key={name}
-            onClick={() => handleBackgroundChange(name)}
-            className={`px-4 py-2 rounded transition-all ${background === name ? "bg-[#191919] text-white" : "bg-gray-200 text-black"}`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+    .buttons {
+      margin-top: 15px;
+    }
 
-      <div
-        ref={captureRef}
-        className="relative"
-        style={{
-          width: "1400px",
-          height: "500px",
-          backgroundColor: background === "transparent" ? "transparent" : background,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        {imageUrl ? (
-          <img
-            ref={imageRef}
-            src={imageUrl}
-            alt="미리보기 이미지"
-            className="max-h-full max-w-full object-contain"
-            onError={() => alert("이미지를 불러올 수 없습니다. 이미지 주소를 확인해주세요.")}
-          />
-        ) : (
-          <span className="text-gray-500">이미지 주소를 입력하세요</span>
-        )}
-      </div>
+    button {
+      margin: 5px;
+      padding: 10px 20px;
+      font-size: 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
 
-      <button
-        onClick={handleCapture}
-        className="mt-4 px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-      >
-        이미지 다운로드
-      </button>
-    </div>
-  );
-}
+    button.bg {
+      background-color: #eee;
+    }
+
+    button.download {
+      background-color: #4a90e2;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+<h1>책 이미지 위젯 생성기</h1>
+
+<input type="text" id="imageURLInput" placeholder="이미지 주소를 붙여넣으세요 (https://...)">
+<br>
+<div id="dropZone">여기에 이미지를 드래그하거나 클릭하여 업로드하세요</div>
+<input type="file" id="fileInput" style="display: none;" accept="image/*">
+
+<div class="buttons">
+  <button class="bg" onclick="setBackground('white')">흰 배경</button>
+  <button class="bg" onclick="setBackground('black')">검정 배경</button>
+  <button class="bg" onclick="setBackground('transparent')">투명 배경</button>
+  <button class="download" onclick="downloadImage()">이미지 다운로드</button>
+</div>
+
+<canvas id="canvas"></canvas>
+<img id="preview">
+
+<script>
+  let selectedBackground = 'white';
+  let uploadedImage = null;
+
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const urlInput = document.getElementById('imageURLInput');
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    handleFile(e.dataTransfer.files[0]);
+  });
+
+  fileInput.addEventListener('change', () => {
+    handleFile(fileInput.files[0]);
+  });
+
+  urlInput.addEventListener('input', () => {
+    const url = urlInput.value.trim();
+    if (url && url.startsWith('http')) {
+      uploadedImage = new Image();
+      uploadedImage.crossOrigin = "anonymous";
+      uploadedImage.onload = () => drawImage();
+      uploadedImage.onerror = () => alert("이미지를 불러올 수 없습니다. 주소를 확인해주세요.");
+      uploadedImage.src = url;
+    }
+  });
+
+  function handleFile(file) {
+    if (!file.type.startsWith('image/')) {
+      alert("이미지 파일만 업로드할 수 있습니다.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      uploadedImage = new Image();
+      uploadedImage.onload = () => drawImage();
+      uploadedImage.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function setBackground(color) {
+    selectedBackground = color;
+    if (uploadedImage) drawImage();
+  }
+
+  function drawImage() {
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const canvasWidth = 1400;
+    const canvasHeight = 500;
+    canvas.width = canvasHeight;
+    canvas.height = canvasHeight;
+
+    if (selectedBackground !== 'transparent') {
+      ctx.fillStyle = selectedBackground;
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    } else {
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    }
+
+    const scale = Math.min(canvasWidth * 0.3 / uploadedImage.width, canvasHeight * 0.8 / uploadedImage.height);
+    const imgWidth = uploadedImage.width * scale;
+    const imgHeight = uploadedImage.height * scale;
+    const x = (canvasWidth - imgWidth) / 2;
+    const y = (canvasHeight - imgHeight) / 2;
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 10;
+    ctx.drawImage(uploadedImage, x, y, imgWidth, imgHeight);
+    ctx.restore();
+
+    const preview = document.getElementById('preview');
+    preview.src = canvas.toDataURL('image/png');
+  }
+
+  function downloadImage() {
+    const canvas = document.getElementById('canvas');
+    const link = document.createElement('a');
+    link.download = 'book-widget.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+</script>
+
+</body>
+</html>
