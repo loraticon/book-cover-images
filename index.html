@@ -1,115 +1,36 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>책 커버 이미지 생성기</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 2rem;
-      background: #f5f5f5;
-    }
-    .controls {
-      margin-bottom: 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    canvas {
-      display: none;
-    }
-    .preview-container {
-      position: relative;
-      width: 1400px;
-      height: 500px;
-      border: 1px dashed #ccc;
-      margin-top: 1rem;
-      background: white;
-    }
-    .preview-container img {
-      position: absolute;
-      top: 100px;
-      left: 50%;
-      transform: translateX(-50%);
-      max-width: 100%;
-      max-height: 300px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12); /* 📌 추가된 그림자 */
-    }
-  </style>
-</head>
-<body>
-  <h1>책 커버 이미지 생성기</h1>
-  <div class="controls">
-    <label>
-      책 이미지 URL:
-      <input type="text" id="imageUrl" placeholder="이미지 주소 입력" size="50" />
-    </label>
-    <label>
-      배경색 선택:
-      <select id="background">
-        <option value="transparent">투명</option>
-        <option value="#ffffff">흰색</option>
-        <option value="#191919">검정</option>
-      </select>
-    </label>
-    <button onclick="generateImage()">이미지 다운로드</button>
-  </div>
-  <div class="preview-container" id="preview">
-    <img id="bookImage" src="" alt="미리보기" />
-  </div>
-  <canvas id="canvas" width="1400" height="500"></canvas>
-  <script>
-    const bookImage = document.getElementById('bookImage');
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
+<script>
+  function generateImage() {
+    const url = document.getElementById('imageUrl').value;
+    const bg = document.getElementById('background').value;
+    if (!url) return alert('이미지 URL을 입력하세요.');
 
-    function generateImage() {
-      const url = document.getElementById('imageUrl').value;
-      const bg = document.getElementById('background').value;
-      if (!url) return alert('이미지 URL을 입력하세요.');
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function () {
+      canvas.width = 1400;
+      canvas.height = 500;
 
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = function () {
-        canvas.width = 1400;
-        canvas.height = 500;
+      if (bg !== 'transparent') {
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
 
-        if (bg !== 'transparent') {
-          ctx.fillStyle = bg;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-        } else {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
+      // 이미지 비율 유지한 채로 크기 조정
+      const scale = Math.min(500 / img.height, 1400 / img.width);
+      const imgWidth = img.width * scale;
+      const imgHeight = img.height * scale;
+      const x = (1400 - imgWidth) / 2;
+      const y = 100; // 항상 위에서 100px 아래 위치
 
-        const scale = Math.min(1400 / img.width, 300 / img.height);
-        const imgWidth = img.width * scale;
-        const imgHeight = img.height * scale;
-        const x = (1400 - imgWidth) / 2;
-        const y = (500 - imgHeight) / 2;
-        ctx.drawImage(img, x, y);
+      ctx.drawImage(img, x, y, imgWidth, imgHeight);
 
-        const link = document.createElement('a');
-        link.download = 'book-cover.png';
-        link.href = canvas.toDataURL();
-        link.click();
+      const link = document.createElement('a');
+      link.download = 'book-cover.png';
+      link.href = canvas.toDataURL();
+      link.click();
 
-        bookImage.src = url;
-        bookImage.style.display = 'block';
-        bookImage.style.maxHeight = '300px';
-      };
-      img.onerror = function () {
-        alert('이미지를 불러올 수 없습니다. URL을 확인해주세요.');
-      };
-      img.src = url;
-    }
-  </script>
-</body>
-</html>
-
+      bookImage.src = url;
+      bookImage.style.display = 'block';
+      bookImage.style.max
