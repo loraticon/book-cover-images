@@ -97,6 +97,22 @@
       background-color: #4a90e2;
       color: white;
     }
+
+    #colorPicker {
+      display: none;
+      margin: 5px auto;
+    }
+
+    #colorCode {
+      display: inline-block;
+      margin-top: 10px;
+      font-family: monospace;
+      font-size: 14px;
+      background-color: #fff;
+      padding: 5px 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
   </style>
 </head>
 <body>
@@ -115,6 +131,9 @@
   <button class="bg" onclick="setBackground('white', this)">흰 배경</button>
   <button class="bg" onclick="setBackground('black', this)">검정 배경</button>
   <button class="bg" onclick="setBackground('transparent', this)">투명 배경</button>
+  <button class="bg" onclick="toggleColorPicker()">🎨</button>
+  <input type="color" id="colorPicker">
+  <span id="colorCode"></span>
   <button class="download" onclick="downloadImage()">이미지 다운로드</button>
 </div>
 
@@ -131,6 +150,9 @@
   const canvas = document.getElementById('canvas');
   const preview = document.getElementById('preview');
   const ctx = canvas.getContext('2d');
+
+  const colorPicker = document.getElementById('colorPicker');
+  const colorCode = document.getElementById('colorCode');
 
   dropZone.addEventListener('click', () => fileInput.click());
   dropZone.addEventListener('dragover', e => {
@@ -184,6 +206,12 @@
     document.querySelectorAll('.bg').forEach(btn => btn.classList.remove('active'));
     if (button) button.classList.add('active');
     if (uploadedImage) drawImage();
+
+    if (color.startsWith('#')) {
+      colorCode.textContent = color.toUpperCase();
+    } else {
+      colorCode.textContent = '';
+    }
   }
 
   function drawImage() {
@@ -231,8 +259,23 @@
     urlInput.value = "";
     preview.src = "";
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    colorPicker.value = "#ffffff";
+    colorPicker.style.display = "none";
+    colorCode.textContent = "";
   }
+
+  function toggleColorPicker() {
+    colorPicker.click();
+  }
+
+  colorPicker.addEventListener('input', (e) => {
+    selectedBackground = e.target.value;
+    colorCode.textContent = selectedBackground.toUpperCase();
+    document.querySelectorAll('.bg').forEach(btn => btn.classList.remove('active'));
+    if (uploadedImage) drawImage();
+  });
 </script>
 
 </body>
 </html>
+
