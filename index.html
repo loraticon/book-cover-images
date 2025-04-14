@@ -248,11 +248,7 @@
     const imageData = canvas.toDataURL('image/png');
     const newWindow = window.open();
     if (newWindow) {
-      newWindow.document.write(
-        '<html><head><title>Generated Image</title></head><body style="margin:0;text-align:center;background:#f9f9f9;">' +
-        '<img src="' + imageData + '" style="max-width:100%;display:block;margin:auto;" alt="Generated Image">' +
-        '</body></html>'
-      );
+      newWindow.document.write(`<img src="${imageData}" style="max-width:100%;display:block;margin:auto;" alt="Generated Image">`);
     } else {
       alert("팝업이 차단되었습니다. 팝업 차단을 해제해주세요.");
     }
